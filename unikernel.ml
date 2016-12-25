@@ -6,10 +6,9 @@ module Log = (val Logs.src_log src : Logs.LOG)
 
 let listening_port = 53
 
-module Main (C : CONSOLE) (CLOCK: V1.PCLOCK) (S:STACKV4) = struct
+module Main (S:STACKV4) = struct
 
   module U      = S.UDPV4
-  module UDPLOG = Logs_syslog_mirage.Udp(C)(CLOCK)(S.UDPV4)
 
   let process dnstrie ~src:_src ~dst:_d d =
     let open Dns.Packet in
@@ -19,14 +18,8 @@ module Main (C : CONSOLE) (CLOCK: V1.PCLOCK) (S:STACKV4) = struct
                   (fun () -> Dns.Query.answer q.q_name q.q_type dnstrie)
        | _ -> None)
 
-  let start con clock s =
+  let start s _ =
     let udp = S.udpv4 s in
-    let reporter =
-      let ip = Ipaddr.V4.of_string_exn "198.167.222.206" in
-      UDPLOG.create con clock udp ~hostname:"ns.nqsb.io" ip ~truncate:1484 ()
-    in
-    Logs.set_reporter reporter ;
-
     let process = process Zone.db.Dns.Loader.trie in
     let processor =
       let open Dns_server in
@@ -56,12 +49,17 @@ module Main (C : CONSOLE) (CLOCK: V1.PCLOCK) (S:STACKV4) = struct
             and dst = src
             and dst_port = src_port
             in
-            U.write ~src_port ~dst ~dst_port udp rbuf >>= function
-            | Error e ->
-              Log.warn (fun f -> f "%s failure sending reply: %a"
-                           r Mirage_pp.pp_udp_error e);
-              Lwt.return_unit
-            | Ok () -> Lwt.return_unit
+            if Cstruct.len rbuf > 1484 then
+              (* otherwise solo5 assertions failure (if more than MTU bytes are send) *)
+              (Log.warn (fun f -> f "%s tried to send a reply with more than 1484 bytes" r) ;
+               Lwt.return_unit)
+            else
+              U.write ~src_port ~dst ~dst_port udp rbuf >>= function
+              | Error e ->
+                Log.warn (fun f -> f "%s failure sending reply: %a"
+                             r U.pp_error e);
+                Lwt.return_unit
+              | Ok () -> Lwt.return_unit
         with e ->
           Log.warn (fun f -> f "%s exception %s" r (Printexc.to_string e));
           Lwt.return_unit);
