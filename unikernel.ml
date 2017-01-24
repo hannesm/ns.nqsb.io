@@ -1,4 +1,4 @@
-open V1_LWT
+open Mirage_types_lwt
 open Lwt.Infix
 
 let src = Logs.Src.create "server" ~doc:"DNS server"
@@ -8,7 +8,7 @@ let listening_port = 53
 
 module Main (S:STACKV4) = struct
 
-  module U      = S.UDPV4
+  module U = S.UDPV4
 
   let process dnstrie ~src:_src ~dst:_d d =
     let open Dns.Packet in
@@ -54,12 +54,11 @@ module Main (S:STACKV4) = struct
               (Log.warn (fun f -> f "%s tried to send a reply with more than 1484 bytes" r) ;
                Lwt.return_unit)
             else
-              U.write ~src_port ~dst ~dst_port udp rbuf >>= function
+              U.write ~src_port ~dst ~dst_port udp rbuf >|= function
               | Error e ->
                 Log.warn (fun f -> f "%s failure sending reply: %a"
-                             r U.pp_error e);
-                Lwt.return_unit
-              | Ok () -> Lwt.return_unit
+                             r U.pp_error e)
+              | Ok () -> ()
         with e ->
           Log.warn (fun f -> f "%s exception %s" r (Printexc.to_string e));
           Lwt.return_unit);
