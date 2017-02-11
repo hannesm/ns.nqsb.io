@@ -8,7 +8,7 @@ let ns = sn "ns"
 let ns2 = Name.of_string_list ["ns";"mehnert"; "org"]
 let mx = Name.of_string_list ["mail";"mehnert"; "org"]
 
-let serial = 201702080l
+let serial = 201702110l
 and refresh = 16384l
 and retry = 2048l
 and expire = 1048576l
@@ -30,4 +30,5 @@ let db =
   Loader.add_a_rr (ip "198.167.222.205") ttl (sn "hannes") db;
   Loader.add_a_rr (ip "198.167.222.207") ttl (sn "shell") db;
   Loader.add_a_rr (ip "198.167.222.209") ttl (sn "kinda") db;
+  Loader.add_a_rr (ip "198.167.222.210") ttl (sn "tls") db;
   db
