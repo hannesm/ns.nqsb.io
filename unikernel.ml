@@ -30,20 +30,16 @@ module Main (S:STACKV4) = struct
       fun ~src ~dst ~src_port buf ->
         let r = Format.sprintf "%s:%d" (Ipaddr.V4.to_string src) src_port  in
         try
-          let ba = Cstruct.to_bigarray buf in
-          let packet = Dns.Packet.parse ba in
+          let packet = Dns.Packet.parse buf in
           Log.info (fun f -> f "%s query %s" r (Dns.Packet.to_string packet)) ;
           let src' = Ipaddr.V4 dst, listening_port
           and dst' = Ipaddr.V4 src, src_port
-          and obuf = (Io_page.get 1 :> Dns.Buf.t)
-          and l = Dns.Buf.length ba
           in
-          Dns_server.process_query ba l obuf src' dst' processor >>= function
+          Dns_server.process_query buf (Cstruct.len buf) src' dst' processor >>= function
           | None -> Log.info (fun f -> f "%s no response" r); Lwt.return_unit
-          | Some rba ->
-            let rbuf = Cstruct.of_bigarray rba in
+          | Some rbuf ->
             (* in theory, this _could_ fail, but it is our very own answer... *)
-            let reply = Dns.Packet.(to_string (parse rba)) in
+            let reply = Dns.Packet.(to_string (parse rbuf)) in
             Log.info (fun f -> f "%s reply %s" r reply);
             let src_port = listening_port
             and dst = src

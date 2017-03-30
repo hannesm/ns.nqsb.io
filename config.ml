@@ -18,7 +18,7 @@ let logger =
 
 let dns_handler =
   let packages = [
-    package ~sublibs:["mirage"] "dns";
+    package ~min:"0.20.0" ~sublibs:["mirage"] "dns";
     package ~sublibs:["lwt"] "logs"
   ] in
   foreign
