@@ -1,8 +1,8 @@
 open Mirage
 
 let address =
-  let network = Ipaddr.V4.Prefix.of_address_string_exn "198.167.222.200/24"
-  and gateway = Ipaddr.V4.of_string "198.167.222.1"
+  let network = Ipaddr.V4.Prefix.of_address_string_exn "194.150.168.146/28"
+  and gateway = Ipaddr.V4.of_string "194.150.168.145"
   in
   { network ; gateway }
 
@@ -13,7 +13,7 @@ let net =
 
 let logger =
   syslog_udp
-    (syslog_config ~truncate:1484 "ns.nqsb.io" (Ipaddr.V4.of_string_exn "198.167.222.206"))
+    (syslog_config ~truncate:1484 "sn.nqsb.io" (Ipaddr.V4.of_string_exn "194.150.168.145"))
     net
 
 let dns_handler =
