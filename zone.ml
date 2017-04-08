@@ -9,7 +9,7 @@ let ns' = sn "sn"
 let ns2 = Name.of_string_list ["ns";"mehnert"; "org"]
 let mx = Name.of_string_list ["mail";"mehnert"; "org"]
 
-let serial = 201704080l
+let serial = 201708080l
 and refresh = 16384l
 and retry = 2048l
 and expire = 1048576l
@@ -34,4 +34,5 @@ let db =
   Loader.add_a_rr (ip "198.167.222.207") ttl (sn "shell") db;
   Loader.add_a_rr (ip "198.167.222.209") ttl (sn "kinda") db;
   Loader.add_a_rr (ip "198.167.222.210") ttl (sn "tls") db;
+  Loader.add_a_rr (ip "198.167.222.213") ttl (sn "netsem") db;
   db
