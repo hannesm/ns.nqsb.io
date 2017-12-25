@@ -5,17 +5,19 @@ let net =
     (socket_stackv4 [Ipaddr.V4.any])
     (static_ipv4_stack ~arp:farp default_network)
 
-let logger = syslog_udp net
+let logger = syslog_udp ~config:(syslog_config ~truncate:1484 "ns.nqsb.io") net
 
 let dns_handler =
   let packages = [
-    package ~min:"0.20.0" ~sublibs:["mirage"] "dns";
-    package ~sublibs:["lwt"] "logs"
+    package "logs" ;
+    package ~sublibs:["server" ; "crypto" ; "mirage"] "udns" ;
+    package "nocrypto"
   ] in
   foreign
-    ~deps:[abstract logger]
+    ~deps:[abstract nocrypto; abstract logger]
     ~packages
-    "Unikernel.Main" (stackv4 @-> job)
+    "Unikernel.Main"
+    (random @-> pclock @-> mclock @-> time @-> stackv4 @-> job)
 
 let () =
-  register "dns" [dns_handler $ net]
+  register "ns.nqsb.io" [dns_handler $ default_random $ default_posix_clock $ default_monotonic_clock $ default_time $ net ]

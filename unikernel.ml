@@ -1,63 +1,50 @@
 open Mirage_types_lwt
-open Lwt.Infix
 
-let src = Logs.Src.create "server" ~doc:"DNS server"
-module Log = (val Logs.src_log src : Logs.LOG)
+module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = struct
 
-let listening_port = 53
+  module D = Dns_mirage.Make(R)(P)(M)(T)(S)
 
-module Main (S:STACKV4) = struct
-
-  module U = S.UDPV4
-
-  let process dnstrie ~src:_src ~dst:_d d =
-    let open Dns.Packet in
-    Lwt.return
-      (match d.questions with
-       | [q] -> Dns.Protocol.contain_exc "answer"
-                  (fun () -> Dns.Query.answer q.q_name q.q_type dnstrie)
-       | _ -> None)
-
-  let start s _ =
-    let udp = S.udpv4 s in
-    let process = process Zone.db.Dns.Loader.trie in
-    let processor =
-      let open Dns_server in
-      (processor_of_process process :> (module PROCESSOR))
+  let data =
+    let zone = Dns_name.of_string_exn "nqsb.io" in
+    let n = Dns_name.prepend_exn zone
+    and ip = Ipaddr.V4.of_string_exn
+    and ss = Dns_name.DomSet.of_list
     in
+    let ns = n "ns"
+    and ttl = 2560l
+    and ns' = n "sn"
+    and mx = Dns_name.of_string_exn "mail.mehnert.org"
+    in
+    let soa = Dns_packet.({ nameserver = ns ;
+                            hostmaster = n "hostmaster" ;
+                            serial = 1l ; refresh = 16384l ; retry = 2048l ;
+                            expiry = 1048576l ; minimum = ttl })
+    in
+    let open Dns_trie in
+    let open Dns_map in
+    let t = insert zone (V (K.Soa, (ttl, soa))) Dns_trie.empty in
+    let t = insert zone (V (K.Ns, (ttl, ss [ ns ; ns' ], Dns_name.DomMap.empty))) t in
+    let t = insert ns (V (K.A, (ttl, [ ip "198.167.222.200" ]))) t in
+    let t = insert ns' (V (K.A, (ttl, [ ip "194.150.168.146" ]))) t in
+    let t = insert zone (V (K.A, (ttl, [ ip "198.167.222.201" ]))) t in
+    let t = insert zone (V (K.Mx, (ttl, [ (10, mx) ]))) t in
+    let t = insert (n "usenix15") (V (K.A, (ttl, [ ip "198.167.222.201" ]))) t in
+    let t = insert (n "tron") (V (K.A, (ttl, [ ip "198.167.222.201" ]))) t in
+    let t = insert (n "hannes") (V (K.A, (ttl, [ ip "198.167.222.205" ]))) t in
+    let t = insert (n "shell") (V (K.A, (ttl, [ ip "198.167.222.207" ]))) t in
+    let t = insert (n "kinda") (V (K.A, (ttl, [ ip "198.167.222.209" ]))) t in
+    let t = insert (n "tls") (V (K.A, (ttl, [ ip "198.167.222.210" ]))) t in
+    let t = insert (n "netsem") (V (K.A, (ttl, [ ip "198.167.222.213" ]))) t in
+    t
 
-    S.listen_udpv4 s ~port:listening_port (
-      fun ~src ~dst ~src_port buf ->
-        let r = Format.sprintf "%s:%d" (Ipaddr.V4.to_string src) src_port  in
-        try
-          let packet = Dns.Packet.parse buf in
-          Log.info (fun f -> f "%s query %s" r (Dns.Packet.to_string packet)) ;
-          let src' = Ipaddr.V4 dst, listening_port
-          and dst' = Ipaddr.V4 src, src_port
-          in
-          Dns_server.process_query buf (Cstruct.len buf) src' dst' processor >>= function
-          | None -> Log.info (fun f -> f "%s no response" r); Lwt.return_unit
-          | Some rbuf ->
-            (* in theory, this _could_ fail, but it is our very own answer... *)
-            let reply = Dns.Packet.(to_string (parse rbuf)) in
-            Log.info (fun f -> f "%s reply %s" r reply);
-            let src_port = listening_port
-            and dst = src
-            and dst_port = src_port
-            in
-            if Cstruct.len rbuf > 1484 then
-              (* otherwise solo5 assertions failure (if more than MTU bytes are send) *)
-              (Log.warn (fun f -> f "%s tried to send a reply with more than 1484 bytes" r) ;
-               Lwt.return_unit)
-            else
-              U.write ~src_port ~dst ~dst_port udp rbuf >|= function
-              | Error e ->
-                Log.warn (fun f -> f "%s failure sending reply: %a"
-                             r U.pp_error e)
-              | Ok () -> ()
-        with e ->
-          Log.warn (fun f -> f "%s exception %s" r (Printexc.to_string e));
-          Lwt.return_unit);
-    Log.info (fun f -> f "DNS server listening on UDP port %d" listening_port);
+    let start _rng pclock mclock _ s _ _ =
+    let trie = data in
+    (match Dns_trie.check trie with
+     | Ok () -> ()
+     | Error e ->
+       Logs.err (fun m -> m "error %a during check()" Dns_trie.pp_err e) ;
+       invalid_arg "check") ;
+    let t = Dns_server.Primary.create ~a:[ Dns_server.tsig_auth ] ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign ~rng:R.generate trie in
+    D.primary s pclock mclock t ;
     S.listen s
 end
