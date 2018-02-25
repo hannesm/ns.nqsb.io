@@ -17,13 +17,13 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     in
     let soa = Dns_packet.({ nameserver = ns ;
                             hostmaster = n "hostmaster" ;
-                            serial = 1l ; refresh = 16384l ; retry = 2048l ;
+                            serial = 2l ; refresh = 16384l ; retry = 2048l ;
                             expiry = 1048576l ; minimum = ttl })
     in
     let open Dns_trie in
     let open Dns_map in
     let t = insert zone (V (K.Soa, (ttl, soa))) Dns_trie.empty in
-    let t = insert zone (V (K.Ns, (ttl, ss [ ns ; ns' ], Dns_name.DomMap.empty))) t in
+    let t = insert zone (V (K.Ns, (ttl, ss [ ns ; ns' ]))) t in
     let t = insert ns (V (K.A, (ttl, [ ip "198.167.222.200" ]))) t in
     let t = insert ns' (V (K.A, (ttl, [ ip "194.150.168.146" ]))) t in
     let t = insert zone (V (K.A, (ttl, [ ip "198.167.222.201" ]))) t in
@@ -35,6 +35,7 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     let t = insert (n "kinda") (V (K.A, (ttl, [ ip "198.167.222.209" ]))) t in
     let t = insert (n "tls") (V (K.A, (ttl, [ ip "198.167.222.210" ]))) t in
     let t = insert (n "netsem") (V (K.A, (ttl, [ ip "198.167.222.213" ]))) t in
+    let t = insert (n "contao") (V (K.A, (ttl, [ ip "198.167.222.212" ]))) t in
     t
 
     let start _rng pclock mclock _ s _ _ =
@@ -44,7 +45,8 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
      | Error e ->
        Logs.err (fun m -> m "error %a during check()" Dns_trie.pp_err e) ;
        invalid_arg "check") ;
-    let t = Dns_server.Primary.create ~a:[ Dns_server.tsig_auth ] ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign ~rng:R.generate trie in
+    let now = M.elapsed_ns mclock in
+    let t = Dns_server.Primary.create now ~a:[ Dns_server.tsig_auth ] ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign ~rng:R.generate trie in
     D.primary s pclock mclock t ;
     S.listen s
 end
