@@ -14,7 +14,7 @@ let dns_handler =
     package "nocrypto"
   ] in
   foreign
-    ~deps:[abstract nocrypto; abstract logger]
+    ~deps:[ abstract nocrypto ; abstract logger ; abstract app_info ]
     ~packages
     "Unikernel.Main"
     (random @-> pclock @-> mclock @-> time @-> stackv4 @-> job)

@@ -38,7 +38,12 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     let t = insert (n "contao") (V (K.A, (ttl, [ ip "198.167.222.212" ]))) t in
     t
 
-    let start _rng pclock mclock _ s _ _ =
+  let start _rng pclock mclock _ s _ _ info =
+    Logs.info (fun m -> m "used packages: %a"
+                  Fmt.(Dump.list @@ pair ~sep:(unit ".") string string)
+                  info.Mirage_info.packages) ;
+    Logs.info (fun m -> m "used libraries: %a"
+                  Fmt.(Dump.list string) info.Mirage_info.libraries) ;
     let trie = data in
     (match Dns_trie.check trie with
      | Ok () -> ()
