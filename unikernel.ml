@@ -50,8 +50,11 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
      | Error e ->
        Logs.err (fun m -> m "error %a during check()" Dns_trie.pp_err e) ;
        invalid_arg "check") ;
-    let now = M.elapsed_ns mclock in
-    let t = Dns_server.Primary.create now ~a:[ Dns_server.tsig_auth ] ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign ~rng:R.generate trie in
+    let t =
+      UDns_server.Primary.create ~a:[UDns_server.tsig_auth]
+        ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign
+        ~rng:R.generate trie
+    in
     D.primary s pclock mclock t ;
     S.listen s
 end
