@@ -20,4 +20,4 @@ let dns_handler =
     (random @-> pclock @-> mclock @-> time @-> stackv4 @-> job)
 
 let () =
-  register "ns.nqsb.io" [dns_handler $ default_random $ default_posix_clock $ default_monotonic_clock $ default_time $ net ]
+  register "nsnqsb" [dns_handler $ default_random $ default_posix_clock $ default_monotonic_clock $ default_time $ net ]
