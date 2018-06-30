@@ -7,14 +7,21 @@ let net =
 
 let logger = syslog_udp ~config:(syslog_config ~truncate:1484 "ns.nqsb.io") net
 
+let keys =
+  let doc = Key.Arg.info ~doc:"nsupdate keys (name:type:value,...)" ["keys"] in
+  Key.(create "keys" Arg.(opt (list string) [] doc))
+
 let dns_handler =
   let packages = [
     package "logs" ;
     package ~sublibs:["server" ; "crypto" ; "mirage"] "udns" ;
     package "nocrypto"
-  ] in
+  ]
+  and keys = Key.([ abstract keys ])
+  in
   foreign
     ~deps:[ abstract nocrypto ; abstract logger ; abstract app_info ]
+    ~keys
     ~packages
     "Unikernel.Main"
     (random @-> pclock @-> mclock @-> time @-> stackv4 @-> job)

@@ -38,6 +38,15 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     let t = insert (n "contao") A (ttl, [ ip "198.167.222.212" ]) t in
     t
 
+  let process_key acc key =
+    match Astring.String.cut ~sep:":" key with
+    | None -> Logs.err (fun m -> m "couldn't parse key %s" key) ; acc
+    | Some (name, dnskey) -> match Domain_name.of_string ~hostname:false name, Dns_packet.dnskey_of_string dnskey with
+      | Error _, _ | _, None -> Logs.err (fun m -> m "failed to parse key %s" key) ; acc
+      | Ok name, Some k ->
+        Logs.info (fun m -> m "inserted %a %a" Domain_name.pp name Dns_packet.pp_dnskey k) ;
+        (name, k) :: acc
+
   let start _rng pclock mclock _ s _ _ info =
     Logs.info (fun m -> m "used packages: %a"
                   Fmt.(Dump.list @@ pair ~sep:(unit ".") string string)
@@ -50,8 +59,9 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
      | Error e ->
        Logs.err (fun m -> m "error %a during check()" Dns_trie.pp_err e) ;
        invalid_arg "check") ;
+    let keys = List.fold_left process_key [] (Key_gen.keys ()) in
     let t =
-      UDns_server.Primary.create ~a:[UDns_server.Authentication.tsig_auth]
+      UDns_server.Primary.create ~keys ~a:[UDns_server.Authentication.tsig_auth]
         ~tsig_verify:Dns_tsig.verify ~tsig_sign:Dns_tsig.sign
         ~rng:R.generate trie
     in
