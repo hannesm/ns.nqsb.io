@@ -14,7 +14,7 @@ let keys =
 let dns_handler =
   let packages = [
     package "logs" ;
-    package ~sublibs:["server" ; "crypto" ; "mirage"] "udns" ;
+    package ~sublibs:["server" ; "crypto" ; "mirage.server"] "udns" ;
     package "nocrypto"
   ]
   and keys = Key.([ abstract keys ])
