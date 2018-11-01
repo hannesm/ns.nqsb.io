@@ -1,6 +1,12 @@
-## NS.NQSB.IO name server
+## nqsb.io name server unikernels
 
-This is a simple name server which runs on `ns.nqsb.io`.  No external data
-required (no KV_RO zonefile, instead uses raw `Dns.Loader.add_*`).
+The MirageOS unikernel serving DNS as `ns.nqsb.io` is developed in the `primary`
+subfolder.
+
+The secondary - aka `sn.nqsb.io` - is in the `secondary` subfolder. This waits
+for DNS notify frames from `sn.nqsb.io` and does periodically `SOA` requests
+and `AXFR` zone transfers.
+
+Key material is provided via command line parameters.
 
 Logging done via syslog.

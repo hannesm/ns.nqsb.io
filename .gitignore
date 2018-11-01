@@ -1,13 +1,12 @@
-_build
+*/_build
+*/_build-solo5-hvt
 
-log
-Makefile
-main.ml
-key_gen.ml
-main.native
-
-.mirage.config
-myocamlbuild.ml
-*.opam
-*.virtio
-dns
+*/Makefile
+*/Makefile.solo5-hvt
+*/main.ml
+*/key_gen.ml
+*/.mirage.config
+*/myocamlbuild.ml
+*/*.opam
+*/*.hvt
+*/solo5-hvt
