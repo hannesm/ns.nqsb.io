@@ -17,7 +17,7 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     in
     let soa = Dns_packet.({ nameserver = ns ;
                             hostmaster = n "hostmaster" ;
-                            serial = 456l ; refresh = 16384l ; retry = 2048l ;
+                            serial = 457l ; refresh = 16384l ; retry = 2048l ;
                             expiry = 1048576l ; minimum = ttl })
     in
     let open Dns_trie in
