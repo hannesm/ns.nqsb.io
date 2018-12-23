@@ -24,10 +24,14 @@ module Main (R : RANDOM) (P : PCLOCK) (M : MCLOCK) (T : TIME) (S : STACKV4) = st
     let open Dns_map in
     let t = insert zone Soa (ttl, soa) Dns_trie.empty in
     let t = insert zone Ns (ttl, Domain_name.Set.(add ns (singleton ns'))) t in
+    let t = insert zone Mx (ttl, MxSet.singleton (10, mx)) t in
+    let t =
+      let caa = Dns_packet.{ critical = true ; tag = "issue" ; value = [ "letsencrypt.org" ] } in
+      insert zone Caa (ttl, CaaSet.singleton caa) t
+    in
     let t = insert ns A (ttl, ip_set "198.167.222.200") t in
     let t = insert ns' A (ttl, ip_set "194.150.168.146") t in
     let t = insert zone A (ttl, ip_set "198.167.222.201") t in
-    let t = insert zone Mx (ttl, MxSet.singleton (10, mx)) t in
     let t = insert (n "usenix15") A (ttl, ip_set "198.167.222.201") t in
     let t = insert (n "tron") A (ttl, ip_set "198.167.222.201") t in
     let t = insert (n "hannes") A (ttl, ip_set "198.167.222.205") t in
