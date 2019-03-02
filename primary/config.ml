@@ -1,11 +1,8 @@
 open Mirage
 
-let net =
-  if_impl Key.is_unix
-    (socket_stackv4 [Ipaddr.V4.any])
-    (static_ipv4_stack ~arp:farp default_network)
+let net = generic_stackv4 default_network
 
-let logger = syslog_udp ~config:(syslog_config ~truncate:1484 "ns.nqsb.io") net
+let logger = syslog_udp ~config:(syslog_config "ns.nqsb.io") net
 
 let keys =
   let doc = Key.Arg.info ~doc:"nsupdate keys (name:type:value,...)" ["keys"] in
@@ -14,8 +11,10 @@ let keys =
 let dns_handler =
   let packages = [
     package "logs" ;
+    package ~min:"0.2.1" "logs-syslog" ;
     package ~sublibs:["server" ; "crypto" ; "mirage.server"] "udns" ;
-    package "nocrypto"
+    package "nocrypto" ;
+    package ~min:"3.7.1" "tcpip" ;
   ]
   and keys = Key.([ abstract keys ])
   in
