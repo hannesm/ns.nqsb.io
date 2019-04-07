@@ -1,5 +1,10 @@
 ## nqsb.io name server unikernels
 
+*NOTE* As of April 6th 2019, this is deprecated and no longer in use. Instead,
+the [`primary-git` unikernel](https://github.com/roburio/unikernels)
+(and `secondary`) have been deployed, which store data in a remote git
+repository.
+
 The MirageOS unikernel serving DNS as `ns.nqsb.io` is developed in the `primary`
 subfolder.
 
